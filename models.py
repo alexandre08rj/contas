@@ -2,14 +2,44 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+class HistoricoManager(models.Model):
+    def get_query_set(self):
+        query_set = super(HistoricoManager, self).get_query_set()
+        
+        return query_set.extra(
+            select = {
+                '_valor_total': """select sum(valor * case operacao when 'c' then 1 else -1 end) 
+                                  from contas_conta
+                                  where contas_conta.historico_id = contas_historico.id""",
+                }
+            )
+
 class Historico(models.Model):
     class Meta:
         ordering = ('descricao',)
         
     descricao = models.CharField(max_length=50)
+    objects = HistoricoManager()
+    
+    def valor_total(self):
+        return self.v_valor_total or 0.0
         
     def __unicode__(self):
         return self.descricao
+    
+class PessoaManager(models.Manager):
+    def get_query_set(self):
+        query_set = super(PessoaManager, self).get_query_set()
+        
+        return query_set.extra(
+            select = {
+                '_valor_total': """select sum(valor * case operacao when 'c' then 1 else -1 end) 
+                                    from contas_conta
+                                    where contas_conta.pessoa_id = contas_pessoa.id""",
+                '_quantidade_contas': """select count(valor) from contas_conta
+                                        where contas_conta.pessoa_id = contas_pessoa.id""",
+                }
+            )
         
 class Pessoa(models.Model):
     class Meta:
@@ -18,6 +48,13 @@ class Pessoa(models.Model):
     nome = models.CharField(max_length=50)
     telefone = models.CharField(max_length=25, blank=True)
     cpf = models.CharField(max_length=11, blank=False)
+    objects = PessoaManager()
+    
+    def valor_total(self):
+        return self._valor_total or 0.0
+    
+    def quantidade_contas(self):
+        return self._quantidade_contas or 0 
     
     def __unicode__(self):
         return self.nome
@@ -58,3 +95,36 @@ class Conta(models.Model):
         blank=True,
         )
     descricao = models.TextField(blank=True)
+    
+class ContaPagar(Conta):
+    class Meta:
+        ordering = ('data_vencimento', 'valor')
+        verbose_name = _('Conta Pagar')
+        verbose_name_plural = _('Contas a pagar')
+        
+    def save(self, *args, **kwargs):
+        self.operacao = CONTA_OPERACAO_DEBITO
+        super(ContaPagar, self).save(*args, **kwargs)
+        
+class ContaReceber(Conta):
+    class Meta:
+        ordering = ('data_vencimento', 'valor')
+        verbose_name = _('Conta Recebers')
+        verbose_name_plural = _('Contas a receber')
+        
+    def save(self, *args, **kwargs):
+        self.operacao = CONTA_OPERACAO_CREDITO
+        super(ContaReceber, self).save(*args, **kwargs)
+        
+class Pagamento(models.Model):
+    class Meta:
+        abstract = True
+        
+    data_pagamento = models.DateField()
+    valor = models.DecimalField(max_digits=15, decimal_places=2)
+    
+class PagamentoPago(Pagamento):
+    conta = models.ForeignKey('ContaPagar')
+    
+class PagamentoRecebido(Pagamento):
+    conta = models.ForeignKey('ContaReceber')
