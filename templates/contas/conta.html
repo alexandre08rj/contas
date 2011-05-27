@@ -6,6 +6,8 @@
 {% block h1 %}{{ conta }}{% endblock %}
 
 {% block conteudo %}
+<a href="editar/">{% trans "Editar" %}</a>
+<a href="excluir/">{% trans "Excluir" %}</a>
 <ul>
   <li>{% trans "Valor" %}: {{ conta.valor|floatformat:2 }}</li>
   <li>{% trans "Vencimento" %}: {{ conta.data_vencimento|date:"d/m/Y" }}</li>
