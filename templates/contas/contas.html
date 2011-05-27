@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block titulo %}{% trans "Contas Pessoais" %} - {{ block.super }}{% endblock %}
+{% block h1 %}{% trans "Contas Pessoais" %}{% endblock %}
+
+{% block conteudo %}
+<h2>{% trans "Contas a pagar" %}</h2>
+
+<ul>
+	{% for conta in contas_a_pagar %}
+    <li><a href="{{ conta.get_absolute_url }}">{{ conta }}</a></li>
+    {% endfor %}
+</ul>
+
+<h2>{% trans "Contas a receber" %}</h2>
+
+<ul>
+	{% for conta in contas_a_receber %}
+    <li><a href="{{ conta.get_absolute_url }}">{{ conta }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock conteudo %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block titulo %}{{ conta }} - {{ block.super }}{% endblock %}
+{% block h1 %}{{ conta }}{% endblock %}
+
+{% block conteudo %}
+<ul>
+  <li>{% trans "Valor" %}: {{ conta.valor|floatformat:2 }}</li>
+  <li>{% trans "Vencimento" %}: {{ conta.data_vencimento|date:"d/m/Y" }}</li>
+  <li>{% trans "Pessoa" %}: <a href="{{ conta.pessoa.get_absolute_url }}">{{ conta.pessoa }}</a></li>
+  <li>{% trans "Histórico" %}: <a href="{{ conta.historico.get_absolute_url }}">{{ conta.historico }}</a></li>
+  <li>{% trans "Status" %}: {{ conta.get_status_display }}</li>
+  {% ifequal conta.status "p" %}
+  <li>{% trans "Pagamento" %}: {{ conta.data_pagamento|date:"d/m/Y" }}</li>
+  {% endifequal %}
+</ul>
+{{ conta.descricao|linebreaks }}
+
+{% if conta.pagamentos.count %}
+<h2>{% trans "Pagamentos" %}</h2>
+
+<table>
+	<tr>
+    	<th>{% trans "Data" %}</th>
+    	<th>{% trans "Valor" %}</th>
+    </tr>
+    
+    {% for pagamento in conta.pagamentos %}
+    <tr>
+    	<td>{{ pagamento.data_pagamento|date:"d/m/Y" }}</td>
+    	<td>{{ pagamento.valor|floatformat:2 }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% ifequal conta.status "a" %}
+<hr/>
+<h2>{% trans "Novo Pagamento" %}</h2>
+
+<form action="{{ conta.get_absolute_url }}pagar/" method="post">
+	<table>
+    {{ form_pagamento }}
+    </table>
+    
+    <input type="submit" value="{% trans "Salvar pagamento" %}"/>
+    {% csrf_token %}
+</form>
+{% endifequal %}
+
+{% endblock conteudo %}
